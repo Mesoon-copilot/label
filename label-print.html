@@ -1,0 +1,603 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>4x1.5 Label + Customers/Drivers (JSONP)</title>
+
+  <style>
+    :root{
+      --label-w: 4in;
+      --label-h: 1.5in;
+      --page-pad: 0;
+      --gap: 0;
+      --font: "Segoe UI", Tahoma, sans-serif;
+    }
+
+    body{ font-family: var(--font); margin:0; background:#f6f7fb; color:#111; }
+    .wrap{ max-width: 1100px; margin: 18px auto; padding: 0 14px; }
+    .card{ background:#fff; border:1px solid #e5e7eb; border-radius:16px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.06); }
+    h1{ margin:0 0 8px; font-size:18px; }
+    .sub{ font-size:12px; color:#6b7280; line-height:1.4; }
+
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid3{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    @media (max-width: 900px){
+      .grid, .grid3{ grid-template-columns: 1fr; }
+    }
+
+    label{ font-size:12px; color:#374151; display:block; margin-bottom:6px; }
+    input, select{
+      width:100%; padding:10px 12px; border:1px solid #d1d5db; border-radius:12px;
+      font-size:14px; outline:none; box-sizing:border-box;
+    }
+    input:focus, select:focus{ border-color:#111; }
+
+    .btns{ display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; align-items:center; }
+    button{
+      border:0; border-radius:12px; padding:10px 14px; font-weight:800; cursor:pointer;
+      background:#111; color:#fff;
+    }
+    button.secondary{ background:#e5e7eb; color:#111; }
+
+    .status{ margin-left:auto; font-size:12px; display:flex; gap:8px; align-items:center; color:#374151; }
+    .dot{ width:10px; height:10px; border-radius:999px; background:#9ca3af; display:inline-block; }
+    .dot.ok{ background:#22c55e; }
+    .dot.bad{ background:#ef4444; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    /* Preview area */
+    .preview{ margin-top:16px; }
+    .label{
+      width: var(--label-w);
+      height: var(--label-h);
+      box-sizing: border-box;
+      padding: 0.15in 0.18in;
+      background:#fff;
+      border: 1px solid #111; /* preview only */
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+
+    /* Layout ใหม่ตามภาพ */
+    .lay{
+      height: 100%;
+      display:grid;
+      grid-template-columns: 1.2fr 1fr;
+      grid-template-rows: auto 1fr auto;
+      gap: 0;
+    }
+
+    .lay .store{
+      grid-column: 1 / 2;
+      grid-row: 1 / 2;
+      font-weight: 900;
+      font-size: 20px;
+      line-height: 1.05;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .lay .right{
+      grid-column: 2 / 3;
+      grid-row: 1 / 2;
+      text-align: right;
+      font-weight: 900;
+      line-height: 1.05;
+    }
+
+    .lay .right .cap{
+      font-size: 15px;
+    }
+    .lay .right .code{
+      font-size: 20px;
+      margin-top: 6px;
+    }
+
+    .lay .count{
+      grid-column: 1 / 3;
+      grid-row: 2 / 3;
+      text-align:center;
+      font-weight: 900;
+      font-size: 30px;
+      line-height: 1;
+      align-self:center;
+    }
+
+    .lay .prov{
+      grid-column: 1 / 3;
+      grid-row: 3 / 4;
+      text-align:center;
+      font-weight: 900;
+      font-size: 20px;
+      line-height: 1.1;
+      margin-bottom: 2px;
+    }
+
+    
+    .topline{
+      display:flex; justify-content:space-between; align-items:flex-start; gap:10px;
+    }
+    .store{
+      font-weight:900;
+      font-size: 16px;
+      line-height:1.05;
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+      max-width: 3.0in;
+    }
+    .count{
+      font-weight:900;
+      font-size:16px;
+      line-height:1;
+      white-space:nowrap;
+    }
+
+    .meta{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:12px;
+      margin-top:2px;
+    }
+    .meta b{ font-weight:900; }
+
+    .footer{
+      display:flex; justify-content:space-between; align-items:flex-end;
+      font-size:10px; color:#111;
+    }
+
+    /* Print settings: 1 label per page */
+    @media print{
+      @page { size: 4in 1.5in; margin: 0; }
+
+      html, body{
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+      }
+
+      .no-print{ display:none !important; }
+
+      /* สำคัญ: กัน container ทำ wrap/มี padding */
+      .wrap{ margin:0 !important; padding:0 !important; max-width:none !important; }
+      .preview{ margin:0 !important; }
+      .labels{
+        display: block !important;   /* จาก flex -> block */
+        padding: 0 !important;
+        border: 0 !important;
+        background: #fff !important;
+        border-radius: 0 !important;
+      }
+
+      /* 1 label ต่อ 1 หน้า */
+      .label{
+        width: 4in !important;
+        height: 1.5in !important;
+        border: 0 !important;
+        page-break-after: always;
+        break-after: page;
+        break-inside: avoid;
+        box-sizing: border-box;
+        margin: 0 !important;
+      }
+    }
+
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card no-print">
+      <h1>พิมพ์สติ๊กเกอร์ 4x1.5 นิ้ว + เลือก ลูกค้า/คนขับ (บันทึกลงชีต)</h1>
+      <div class="sub">
+        - เลือกลูกค้า → จะเติม “รหัสสาขา/จังหวัด” ให้อัตโนมัติ<br/>
+        - กด “พิมพ์” = บันทึกลง Google Sheet ก่อน แล้วค่อยพิมพ์ (มี JOB ID สำหรับ audit)
+      </div>
+
+      <div class="grid">
+        <div>
+          <label>ค้นหา/เลือกลูกค้า (Dropdown Search)</label>
+          <input id="customerPick" list="customerList" placeholder="พิมพ์ค้นหา: รหัสสาขา / ชื่อร้าน / จังหวัด" />
+          <datalist id="customerList"></datalist>
+        </div>
+        <div class="grid3">
+          <div>
+            <label>รหัสสาขา</label>
+            <input id="branchCode" placeholder="เช่น BKK01" />
+          </div>
+          <div>
+            <label>ชื่อร้าน</label>
+            <input id="customerName" placeholder="เช่น ร้าน A" />
+          </div>
+          <div>
+            <label>จังหวัด</label>
+            <input id="province" placeholder="เช่น สงขลา" />
+          </div>
+        </div>
+      </div>
+
+      <div class="row grid3" style="margin-top:12px;">
+        <div>
+          <label>จำนวนกล่องทั้งหมด</label>
+          <input id="totalBoxes" type="number" min="0" step="1" value="0" />
+        </div>
+        <div>
+          <label>Action</label>
+          <select id="action">
+            <option value="PRINT" selected>PRINT</option>
+            <option value="REPRINT">REPRINT</option>
+            <option value="CANCEL">CANCEL</option>
+          </select>
+        </div>
+        <div>
+          <label>หมายเหตุ (optional)</label>
+          <input id="note" placeholder="เช่น พิมพ์ซ้ำเพราะสติ๊กเกอร์เสีย" />
+        </div>
+      </div>
+
+      <div class="row grid3" style="margin-top:12px;">
+        <div>
+          <label>ค้นหา/เลือกคนขับ (Dropdown Search)</label>
+          <input id="driverPick" list="driverList" placeholder="พิมพ์ค้นหา: ทะเบียน / ชื่อ / เบอร์" />
+          <datalist id="driverList"></datalist>
+        </div>
+        <div>
+          <label>ป้ายทะเบียน</label>
+          <input id="driverPlate" placeholder="เช่น กข1234" />
+        </div>
+        <div class="grid">
+          <div>
+            <label>ชื่อ พขร.</label>
+            <input id="driverName" placeholder="เช่น สมชาย" />
+          </div>
+          <div>
+            <label>เบอร์โทร</label>
+            <input id="driverPhone" placeholder="เช่น 0812345678" />
+          </div>
+        </div>
+      </div>
+
+      <!-- ตัวเลือกประเภทกล่อง (ถ้าคุณยังใช้เดิม) -->
+      <div class="row grid3" style="margin-top:12px;">
+        <div>
+          <label>Size M</label>
+          <input id="sizeM" type="number" min="0" step="1" value="0" />
+        </div>
+        <div>
+          <label>tote_blue</label>
+          <input id="blue" type="number" min="0" step="1" value="0" />
+        </div>
+        <div>
+          <label>tote_red</label>
+          <input id="red" type="number" min="0" step="1" value="0" />
+        </div>
+        <div>
+          <label>tote_green</label>
+          <input id="green" type="number" min="0" step="1" value="0" />
+        </div>
+        <div>
+          <label>tote_black</label>
+          <input id="black" type="number" min="0" step="1" value="0" />
+        </div>
+        <div></div>
+      </div>
+
+      <div class="btns">
+        <button id="btnGen">สร้างตัวอย่าง</button>
+        <button id="btnPrint">พิมพ์ (บันทึกลงชีต)</button>
+        <button class="secondary" id="btnClear">ล้าง</button>
+
+        <div class="status">
+          <span class="dot" id="apiDot"></span>
+          <span id="apiText">พร้อมใช้งาน</span>
+          <span class="mono" id="lastJob" style="margin-left:10px;"></span>
+        </div>
+      </div>
+
+      <div class="sub" style="margin-top:10px;">
+        WEBAPP_URL: <span class="mono" id="showUrl"></span>
+      </div>
+    </div>
+
+    <div class="preview">
+      <div class="labels" id="labels"></div>
+    </div>
+  </div>
+
+<script>
+  // =========================
+  // CONFIG: ใส่ของจริงของคุณ
+  // =========================
+  const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwNsX5Wj0C2tdgNw3AVQf3jxw-NNCUG0JWDWqE9uUVASXoueUemIYxuOtFDkrFFul4T/exec";
+  const API_TOKEN  = "pR1nT-LOG-20260212-TOKEN-9f3kQx";
+
+  // =========================
+  // Helpers
+  // =========================
+  const $ = (id) => document.getElementById(id);
+
+  function setApiStatus(state, text){
+    const dot = $("apiDot");
+    dot.classList.remove("ok","bad");
+    if(state === "ok") dot.classList.add("ok");
+    if(state === "bad") dot.classList.add("bad");
+    $("apiText").textContent = text;
+  }
+
+  function n(id){
+    const v = Number($(id).value);
+    return Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
+  }
+
+  function escapeHtml(s){
+    return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[c]));
+  }
+
+  // =========================
+  // JSONP
+  // =========================
+  function jsonpRequest(url) {
+    return new Promise((resolve, reject) => {
+      const cbName = "cb_" + Math.random().toString(36).slice(2);
+
+      window[cbName] = (data) => {
+        try { delete window[cbName]; } catch(_) {}
+        script.remove();
+        resolve(data);
+      };
+
+      const script = document.createElement("script");
+      script.src = url + (url.includes("?") ? "&" : "?") + "callback=" + encodeURIComponent(cbName);
+
+      script.onerror = () => {
+        try { delete window[cbName]; } catch(_) {}
+        script.remove();
+        reject(new Error("JSONP request failed"));
+      };
+
+      document.body.appendChild(script);
+    });
+  }
+
+  async function apiGet(op, extraParams = {}) {
+    if(!WEBAPP_URL || WEBAPP_URL.includes("PUT_YOUR_WEBAPP_URL_HERE")) throw new Error("WEBAPP_URL not set");
+    if(!API_TOKEN || API_TOKEN.includes("PUT_YOUR_API_TOKEN_HERE")) throw new Error("API_TOKEN not set");
+
+    const qs = new URLSearchParams({ op, token: API_TOKEN, ...extraParams });
+    const url = WEBAPP_URL + "?" + qs.toString();
+    const json = await jsonpRequest(url);
+    if(!json || !json.ok) throw new Error((json && json.error) ? json.error : "API error");
+    return json;
+  }
+
+  // =========================
+  // Master data loading
+  // =========================
+  let customers = [];
+  let drivers = [];
+
+  function renderCustomerDatalist(items){
+    const dl = $("customerList");
+    dl.innerHTML = items.map(it => {
+      const value = `${it.branch_code} | ${it.customer_name} | ${it.province}`;
+      return `<option value="${escapeHtml(value)}"></option>`;
+    }).join("");
+  }
+
+  function renderDriverDatalist(items){
+    const dl = $("driverList");
+    dl.innerHTML = items.map(it => {
+      const value = `${it.plate} | ${it.driver_name} | ${it.phone}`;
+      return `<option value="${escapeHtml(value)}"></option>`;
+    }).join("");
+  }
+
+  function parsePick(text){
+    // "A | B | C"
+    const parts = String(text || "").split("|").map(s => s.trim());
+    return parts;
+  }
+
+  function bindCustomerAutoFill(){
+    $("customerPick").addEventListener("change", () => {
+      const [branch_code, customer_name, province] = parsePick($("customerPick").value);
+      if(branch_code && customer_name){
+        $("branchCode").value = branch_code || "";
+        $("customerName").value = customer_name || "";
+        $("province").value = province || "";
+      }
+    });
+  }
+
+  function bindDriverAutoFill(){
+    $("driverPick").addEventListener("change", () => {
+      const [plate, driver_name, phone] = parsePick($("driverPick").value);
+      if(plate && driver_name){
+        $("driverPlate").value = plate || "";
+        $("driverName").value = driver_name || "";
+        $("driverPhone").value = phone || "";
+      }
+    });
+  }
+
+  // =========================
+  // Labels
+  // =========================
+  function buildLabelHTML(data, idx){
+  const store = escapeHtml(data.customer_name || "-");
+  const branch = escapeHtml(data.branch_code || "-");
+  const prov = escapeHtml(data.province || "-");
+  const total = data.total_boxes;
+
+    return `
+      <div class="label">
+        <div class="lay">
+          <div class="store">${store}</div>
+
+          <div class="right">
+            <div class="cap">รหัสสาขา:</div>
+            <div class="code">${branch}</div>
+          </div>
+
+          <div class="count">${idx}/${total}</div>
+
+          <div class="prov">จว.: ${prov}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderLabels(data){
+    const container = $("labels");
+    container.innerHTML = "";
+
+    if(data.total_boxes <= 0){
+      container.innerHTML = `<div style="color:#6b7280;padding:12px;">กรุณาใส่จำนวนกล่องทั้งหมดมากกว่า 0</div>`;
+      return;
+    }
+
+    let html = "";
+    for(let i=1; i<=data.total_boxes; i++){
+      html += buildLabelHTML(data, i);
+    }
+    container.innerHTML = html;
+  }
+
+  function collectForm(){
+    return {
+      branch_code: $("branchCode").value.trim(),
+      customer_name: $("customerName").value.trim(),
+      province: $("province").value.trim(),
+
+      total_boxes: n("totalBoxes"),
+      size_m: n("sizeM"),
+      tote_blue: n("blue"),
+      tote_red: n("red"),
+      tote_green: n("green"),
+      tote_black: n("black"),
+
+      driver_plate: $("driverPlate").value.trim(),
+      driver_name: $("driverName").value.trim(),
+      driver_phone: $("driverPhone").value.trim(),
+
+      action: ($("action").value || "PRINT").trim().toUpperCase(),
+      note: $("note").value.trim(),
+    };
+  }
+
+  function validateForm(d){
+    if(!d.branch_code) return "กรุณาเลือกลูกค้า/กรอกรหัสสาขา";
+    if(!d.customer_name) return "กรุณาใส่ชื่อร้าน";
+    if(!d.province) return "กรุณาใส่จังหวัด";
+    if(d.total_boxes <= 0) return "จำนวนกล่องทั้งหมดต้องมากกว่า 0";
+    return "";
+  }
+
+  async function saveLogAndGetJobId(d){
+    const json = await apiGet("log", {
+      branch_code: d.branch_code,
+      customer_name: d.customer_name,
+      province: d.province,
+
+      total_boxes: String(d.total_boxes),
+      size_m: String(d.size_m),
+      tote_blue: String(d.tote_blue),
+      tote_red: String(d.tote_red),
+      tote_green: String(d.tote_green),
+      tote_black: String(d.tote_black),
+
+      driver_plate: d.driver_plate,
+      driver_name: d.driver_name,
+      driver_phone: d.driver_phone,
+
+      action: d.action,
+      note: d.note,
+      user_agent: navigator.userAgent
+    });
+    return json.job_id;
+  }
+
+  // =========================
+  // UI actions
+  // =========================
+  let isSaving = false;
+
+  $("btnGen").addEventListener("click", () => {
+    const d = collectForm();
+    const err = validateForm(d);
+    if(err){ alert(err); return; }
+    renderLabels({ ...d, job_id: "" });
+  });
+
+  $("btnPrint").addEventListener("click", async () => {
+    if(isSaving) return;
+    isSaving = true;
+    $("btnPrint").disabled = true;
+
+    try{
+      const d = collectForm();
+      const err = validateForm(d);
+      if(err){ alert(err); return; }
+
+      setApiStatus("", "กำลังบันทึกลงชีต...");
+      const jobId = await saveLogAndGetJobId(d);
+
+      $("lastJob").textContent = "JOB: " + jobId;
+      setApiStatus("ok", "บันทึกสำเร็จ");
+
+      renderLabels({ ...d, job_id: jobId });
+      window.print();
+
+    } catch(e){
+      setApiStatus("bad", "บันทึกไม่สำเร็จ");
+      alert("บันทึกประวัติไม่สำเร็จ: " + (e.message || e));
+    } finally {
+      isSaving = false;
+      $("btnPrint").disabled = false;
+    }
+  });
+
+  $("btnClear").addEventListener("click", () => {
+    ["customerPick","branchCode","customerName","province","totalBoxes","note","driverPick","driverPlate","driverName","driverPhone","sizeM","blue","red","green","black"].forEach(id=>{
+      if(["totalBoxes","sizeM","blue","red","green","black"].includes(id)) $(id).value = 0;
+      else $(id).value = "";
+    });
+    $("action").value = "PRINT";
+    $("labels").innerHTML = "";
+    $("lastJob").textContent = "";
+    setApiStatus("ok", "พร้อมใช้งาน");
+  });
+
+  // =========================
+  // Init
+  // =========================
+  (async function init(){
+    try{
+      $("showUrl").textContent = WEBAPP_URL;
+      setApiStatus("", "กำลังโหลด master data...");
+
+      const c = await apiGet("customers");
+      customers = c.items || [];
+      renderCustomerDatalist(customers);
+      bindCustomerAutoFill();
+
+      const d = await apiGet("drivers");
+      drivers = d.items || [];
+      renderDriverDatalist(drivers);
+      bindDriverAutoFill();
+
+      setApiStatus("ok", "พร้อมใช้งาน");
+    } catch(e){
+      setApiStatus("bad", "โหลด master data ไม่สำเร็จ");
+      alert("โหลดข้อมูลลูกค้า/คนขับไม่สำเร็จ: " + (e.message || e));
+    }
+  })();
+</script>
+</body>
+</html>
