@@ -10,8 +10,8 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-<!-- ZXing (Barcode scanner for mobile camera) -->
-<script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js"></script>
+<!-- html5-qrcode (Camera scanner: barcode + QR) -->
+<script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
 
 <style>
 :root{
@@ -122,6 +122,9 @@ button.secondary{background:#e5e7eb;color:#111;}
   .labels{display:block !important;padding:0 !important;border:0 !important;background:#fff !important;border-radius:0 !important;}
   .label{width:4in !important;height:1.5in !important;border:0 !important;margin:0 !important;page-break-after:always;break-after:page;break-inside:avoid;}
 }
+
+/* Scanner UI */
+.scanHint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4;}
 </style>
 </head>
 
@@ -189,7 +192,10 @@ button.secondary{background:#e5e7eb;color:#111;}
             </button>
           </div>
 
-          <div class="sub">*ทิป: หลังสแกนสำเร็จ ระบบจะเติมค่าให้เอง แล้วปิดหน้าสแกน</div>
+          <div class="scanHint">
+            *กดไอคอนสแกนเพื่อเปิดกล้อง (Barcode เส้น) • สแกนสำเร็จแล้วจะเติมค่าให้อัตโนมัติ
+            <br/>*ทิป: ถ้าคุณใช้ “เครื่องสแกนแบบคีย์บอร์ด” ก็สแกนลงช่องนี้ได้เลย
+          </div>
         </div>
 
         <div></div>
@@ -254,21 +260,26 @@ button.secondary{background:#e5e7eb;color:#111;}
     </div>
 
     <div class="sub" style="margin-top:6px;">
-      แนะนำ: เปิดไฟสว่าง และเอากล้องให้ชัดที่เส้นบาร์โค้ด
+      แนะนำ: เปิดไฟสว่าง / เล็งให้เส้นบาร์โค้ดอยู่กลางกรอบ
     </div>
 
-    <video id="scanVideo" style="width:100%; margin-top:10px; border-radius:12px; background:#000;" playsinline></video>
+    <!-- html5-qrcode ต้องใช้ div -->
+    <div id="scanBox" style="width:100%; margin-top:10px; border-radius:12px; overflow:hidden; background:#000;"></div>
 
-    <div style="display:flex; gap:10px; margin-top:10px;">
+    <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
       <button type="button" id="btnStartScan">เริ่มสแกน</button>
       <button type="button" id="btnStopScan" class="secondary">หยุด</button>
+    </div>
+
+    <div class="scanHint">
+      ถ้าเปิดกล้องไม่ขึ้น: ให้ตรวจสิทธิ์กล้อง (Allow Camera) และต้องเปิดผ่าน https (GitHub Pages)
     </div>
   </div>
 </div>
 
 <script>
 // CONFIG
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwKK2x-AAhnx70iZDX1QreKwIyQQvH7PWl32vuj4AYJA6rGzScjbKHN1SIzqTkz8WQq/exec";
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwNsX5Wj0C2tdgNw3AVQf3jxw-NNCUG0JWDWqE9uUVASXoueUemIYxuOtFDkrFFul4T/exec";
 const API_TOKEN  = "pR1nT-LOG-20260212-TOKEN-9f3kQx";
 
 const byId = (id) => document.getElementById(id);
@@ -286,6 +297,7 @@ function toIntFrom(id){
   return Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
 }
 
+// JSONP
 function jsonpRequest(url){
   return new Promise((resolve, reject) => {
     const cb = "cb_" + Math.random().toString(36).slice(2);
@@ -371,6 +383,7 @@ function initDriverSelect(){
   });
 }
 
+// Labels
 function buildLabelHTML(d, idx){
   const store = (d.customer_name || "-");
   const branch = (d.branch_code || "-");
@@ -404,6 +417,7 @@ function renderLabels(d){
   container.innerHTML = html;
 }
 
+// Form
 function collectForm(){
   return {
     branch_code: byId("branchCode").value.trim(),
@@ -489,7 +503,6 @@ async function handlePrint(){
     window.print();
 
     setTimeout(() => byId("wave").focus(), 350);
-
   } catch(e){
     setApiStatus("bad", "บันทึกไม่สำเร็จ");
     alert("บันทึกประวัติไม่สำเร็จ: " + (e.message || e));
@@ -512,7 +525,6 @@ byId("btnClear").addEventListener("click", () => {
   byId("action").value = "PRINT";
   byId("labels").innerHTML = "";
   setApiStatus("ok", "พร้อมใช้งาน");
-
   setTimeout(() => byId("wave").focus(), 120);
 });
 
@@ -524,9 +536,9 @@ byId("wave").addEventListener("keydown", (ev) => {
   }
 });
 
-// ===== Wave Barcode Scanner (ZXing) =====
-let zxingReader = null;
-let zxingControls = null;
+// ===== Scanner: html5-qrcode =====
+let html5Scanner = null;
+let isScanning = false;
 
 function openScanModal(){
   byId("scanModal").style.display = "flex";
@@ -539,47 +551,62 @@ function closeScanModal(){
 
 async function startScan(){
   try{
-    if(!window.ZXing) throw new Error("ZXing library not loaded");
-    if(!zxingReader) zxingReader = new ZXing.BrowserMultiFormatReader();
+    if(!window.Html5Qrcode) throw new Error("html5-qrcode not loaded");
 
-    const video = byId("scanVideo");
+    if(isScanning) return;
+    isScanning = true;
 
-    zxingControls = await zxingReader.decodeFromVideoDevice(
-      null,
-      video,
-      (result) => {
-        if(result){
-          const text = String(result.getText ? result.getText() : result.text || "").trim();
-          if(text){
-            byId("wave").value = text;
-            byId("wave").focus();
-            closeScanModal();
-          }
+    // สร้าง instance ใหม่ทุกครั้งเพื่อความเสถียร
+    html5Scanner = new Html5Qrcode("scanBox");
+
+    await html5Scanner.start(
+      { facingMode: "environment" }, // กล้องหลัง
+      {
+        fps: 10,
+        // barcode เส้น: ให้กรอบเตี้ยหน่อย
+        qrbox: { width: 320, height: 160 },
+        // บังคับใช้โหมดอ่านเร็วขึ้น (ลด false)
+        disableFlip: true
+      },
+      (decodedText) => {
+        const text = String(decodedText || "").trim();
+        if(text){
+          byId("wave").value = text;
+          closeScanModal();
+          setTimeout(() => byId("wave").focus(), 50);
         }
-      }
+      },
+      () => {} // ignore errors
     );
+
   } catch(e){
+    isScanning = false;
     alert("เปิดกล้องสแกนไม่สำเร็จ: " + (e.message || e));
   }
 }
 
-function stopScan(){
+async function stopScan(){
   try{
-    if(zxingControls){
-      zxingControls.stop();
-      zxingControls = null;
+    if(html5Scanner && isScanning){
+      await html5Scanner.stop();
+      html5Scanner.clear();
     }
-    if(zxingReader){
-      zxingReader.reset();
-    }
-  } catch(_){}
+  } catch(_) {
+    // ignore
+  } finally {
+    html5Scanner = null;
+    isScanning = false;
+    // เคลียร์ DOM บางเครื่องค้างภาพ
+    byId("scanBox").innerHTML = "";
+  }
 }
 
-byId("btnScanWave").addEventListener("click", () => {
+byId("btnScanWave").addEventListener("click", async () => {
   openScanModal();
-  // auto start for speed
-  setTimeout(startScan, 50);
+  // auto start
+  setTimeout(startScan, 80);
 });
+
 byId("btnCloseScan").addEventListener("click", closeScanModal);
 byId("btnStartScan").addEventListener("click", startScan);
 byId("btnStopScan").addEventListener("click", stopScan);
