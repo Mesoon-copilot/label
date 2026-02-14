@@ -3,15 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Label Print 4x1.5 (Select2 + Boxes + Wave Scan)</title>
+<title>Label Print 4x1.5 (Select2 + Boxes + Pallet/Wave)</title>
 
 <!-- Select2 -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-<!-- html5-qrcode (Camera scanner: barcode + QR) -->
-<script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
 
 <style>
 :root{
@@ -67,7 +64,7 @@ button.secondary{background:#e5e7eb;color:#111;}
   grid-template-rows:auto 1fr auto;
 }
 
-/* Font-size ตามที่กำหนด */
+/* ✅ Font-size ตามที่กำหนด */
 .store{font-weight:900;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .right{text-align:right;font-weight:900;}
 .right .cap{font-size:15px;}
@@ -122,9 +119,6 @@ button.secondary{background:#e5e7eb;color:#111;}
   .labels{display:block !important;padding:0 !important;border:0 !important;background:#fff !important;border-radius:0 !important;}
   .label{width:4in !important;height:1.5in !important;border:0 !important;margin:0 !important;page-break-after:always;break-after:page;break-inside:avoid;}
 }
-
-/* Scanner UI */
-.scanHint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4;}
 </style>
 </head>
 
@@ -132,7 +126,7 @@ button.secondary{background:#e5e7eb;color:#111;}
 <div class="wrap">
   <div class="card no-print">
     <h1>พิมพ์สติ๊กเกอร์ 4x1.5 นิ้ว (Select2) + บันทึกลง Google Sheet</h1>
-    <div class="sub">Wave: พิมพ์เอง หรือกดไอคอนเพื่อสแกน Barcode เส้นด้วยกล้องมือถือ</div>
+    <div class="sub">Wave: กรอกมือ (หรือใช้เครื่องสแกนแบบคีย์บอร์ดพิมพ์ลงช่องได้)</div>
 
     <div class="section">
       <div class="sectionTitle"><span class="pill">1</span> ข้อมูลลูกค้า</div>
@@ -172,30 +166,9 @@ button.secondary{background:#e5e7eb;color:#111;}
         </div>
 
         <div>
-          <label>Wave (กรอกมือ / สแกน Barcode)</label>
-
-          <div style="display:flex; gap:10px; align-items:center;">
-            <input id="wave" placeholder="พิมพ์หรือสแกนบาร์โค้ด" style="flex:1;">
-            <button type="button" id="btnScanWave" class="secondary" title="สแกนบาร์โค้ด"
-              style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <path d="M4 7V6a2 2 0 0 1 2-2h1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M20 7V6a2 2 0 0 0-2-2h-1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M4 17v1a2 2 0 0 0 2 2h1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M20 17v1a2 2 0 0 1-2 2h-1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M7 12h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                <path d="M7 9v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
-                <path d="M10 9v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
-                <path d="M13 9v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
-                <path d="M16 9v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
-              </svg>
-            </button>
-          </div>
-
-          <div class="scanHint">
-            *กดไอคอนสแกนเพื่อเปิดกล้อง (Barcode เส้น) • สแกนสำเร็จแล้วจะเติมค่าให้อัตโนมัติ
-            <br/>*ทิป: ถ้าคุณใช้ “เครื่องสแกนแบบคีย์บอร์ด” ก็สแกนลงช่องนี้ได้เลย
-          </div>
+          <label>Wave (กรอกมือ)</label>
+          <input id="wave" placeholder="เช่น WAVE12345">
+          <div class="sub">*กด Enter ที่ช่อง Wave เพื่อพิมพ์ (บันทึก) ได้ทันที</div>
         </div>
 
         <div></div>
@@ -247,34 +220,6 @@ button.secondary{background:#e5e7eb;color:#111;}
   </div>
 
   <div class="labels" id="labels"></div>
-</div>
-
-<!-- Scanner Modal -->
-<div id="scanModal" class="no-print" style="
-  display:none; position:fixed; inset:0; background:rgba(0,0,0,.55);
-  align-items:center; justify-content:center; z-index:9999; padding:14px;">
-  <div style="background:#fff; border-radius:16px; width:min(520px, 96vw); padding:14px; border:1px solid #e5e7eb;">
-    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-      <div style="font-weight:900;">สแกน WAVE (Barcode เส้น)</div>
-      <button type="button" id="btnCloseScan" class="secondary">ปิด</button>
-    </div>
-
-    <div class="sub" style="margin-top:6px;">
-      แนะนำ: เปิดไฟสว่าง / เล็งให้เส้นบาร์โค้ดอยู่กลางกรอบ
-    </div>
-
-    <!-- html5-qrcode ต้องใช้ div -->
-    <div id="scanBox" style="width:100%; margin-top:10px; border-radius:12px; overflow:hidden; background:#000;"></div>
-
-    <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
-      <button type="button" id="btnStartScan">เริ่มสแกน</button>
-      <button type="button" id="btnStopScan" class="secondary">หยุด</button>
-    </div>
-
-    <div class="scanHint">
-      ถ้าเปิดกล้องไม่ขึ้น: ให้ตรวจสิทธิ์กล้อง (Allow Camera) และต้องเปิดผ่าน https (GitHub Pages)
-    </div>
-  </div>
 </div>
 
 <script>
@@ -511,6 +456,7 @@ async function handlePrint(){
     byId("btnPrint").disabled = false;
   }
 }
+
 byId("btnPrint").addEventListener("click", handlePrint);
 
 byId("btnClear").addEventListener("click", () => {
@@ -533,87 +479,6 @@ byId("wave").addEventListener("keydown", (ev) => {
   if(ev.key === "Enter"){
     ev.preventDefault();
     handlePrint();
-  }
-});
-
-// ===== Scanner: html5-qrcode =====
-let html5Scanner = null;
-let isScanning = false;
-
-function openScanModal(){
-  byId("scanModal").style.display = "flex";
-}
-
-function closeScanModal(){
-  stopScan();
-  byId("scanModal").style.display = "none";
-}
-
-async function startScan(){
-  try{
-    if(!window.Html5Qrcode) throw new Error("html5-qrcode not loaded");
-
-    if(isScanning) return;
-    isScanning = true;
-
-    // สร้าง instance ใหม่ทุกครั้งเพื่อความเสถียร
-    html5Scanner = new Html5Qrcode("scanBox");
-
-    await html5Scanner.start(
-      { facingMode: "environment" }, // กล้องหลัง
-      {
-        fps: 10,
-        // barcode เส้น: ให้กรอบเตี้ยหน่อย
-        qrbox: { width: 320, height: 160 },
-        // บังคับใช้โหมดอ่านเร็วขึ้น (ลด false)
-        disableFlip: true
-      },
-      (decodedText) => {
-        const text = String(decodedText || "").trim();
-        if(text){
-          byId("wave").value = text;
-          closeScanModal();
-          setTimeout(() => byId("wave").focus(), 50);
-        }
-      },
-      () => {} // ignore errors
-    );
-
-  } catch(e){
-    isScanning = false;
-    alert("เปิดกล้องสแกนไม่สำเร็จ: " + (e.message || e));
-  }
-}
-
-async function stopScan(){
-  try{
-    if(html5Scanner && isScanning){
-      await html5Scanner.stop();
-      html5Scanner.clear();
-    }
-  } catch(_) {
-    // ignore
-  } finally {
-    html5Scanner = null;
-    isScanning = false;
-    // เคลียร์ DOM บางเครื่องค้างภาพ
-    byId("scanBox").innerHTML = "";
-  }
-}
-
-byId("btnScanWave").addEventListener("click", async () => {
-  openScanModal();
-  // auto start
-  setTimeout(startScan, 80);
-});
-
-byId("btnCloseScan").addEventListener("click", closeScanModal);
-byId("btnStartScan").addEventListener("click", startScan);
-byId("btnStopScan").addEventListener("click", stopScan);
-
-document.addEventListener("keydown", (ev) => {
-  if(ev.key === "Escape" && byId("scanModal").style.display === "flex"){
-    closeScanModal();
   }
 });
 
