@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Label Print 4x1.5 (Select2)</title>
+<title>Label Print 4x1.5 (Select2 + Boxes)</title>
 
 <!-- Select2 -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -26,28 +26,34 @@ body{font-family:var(--font);margin:0;background:var(--bg);color:var(--text);}
 .wrap{max-width:1100px;margin:18px auto;padding:0 14px;}
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);}
 h1{margin:0;font-size:18px;}
-.sub{font-size:12px;color:var(--muted);margin-top:4px;}
+.sub{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.4;}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
-@media(max-width:900px){.grid,.grid3{grid-template-columns:1fr;}}
+.grid5{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+@media(max-width:900px){.grid,.grid3,.grid5{grid-template-columns:1fr;}}
 label{font-size:12px;color:#374151;display:block;margin-bottom:6px;}
 input,select{width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:12px;font-size:14px;box-sizing:border-box;}
 input[readonly]{background:#f9fafb;}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center;}
 button{border:0;border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer;background:#111;color:#fff;}
 button.secondary{background:#e5e7eb;color:#111;}
-.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center;}
 .status{margin-left:auto;font-size:12px;display:flex;gap:8px;align-items:center;}
 .dot{width:10px;height:10px;border-radius:999px;background:#9ca3af;}
 .dot.ok{background:#22c55e;}
 .dot.bad{background:#ef4444;}
-.labels{display:flex;flex-wrap:wrap;padding:12px;background:#fff;border:1px dashed #d1d5db;border-radius:16px;margin-top:16px;}
+.labels{display:flex;flex-wrap:wrap;padding:12px;background:#fff;border:1px dashed #d1d5db;border-radius:16px;margin-top:16px;min-height:110px;}
 
+.section{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px;margin-top:12px;}
+.sectionTitle{font-size:12px;color:var(--muted);font-weight:800;margin-bottom:10px;display:flex;gap:8px;align-items:center;}
+.pill{font-size:11px;border:1px solid var(--border);padding:2px 8px;border-radius:999px;background:#fff;color:#111;}
+
+/* Label */
 .label{
   width:var(--label-w);
   height:var(--label-h);
   box-sizing:border-box;
   padding:0.15in 0.18in;
-  border:1px solid #111;
+  border:1px solid #111; /* preview only */
   display:flex;
 }
 .lay{
@@ -57,6 +63,8 @@ button.secondary{background:#e5e7eb;color:#111;}
   grid-template-columns:1.2fr 1fr;
   grid-template-rows:auto 1fr auto;
 }
+
+/* ✅ Font-size ตามที่คุณกำหนด */
 .store{font-weight:900;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .right{text-align:right;font-weight:900;}
 .right .cap{font-size:15px;}
@@ -64,204 +72,400 @@ button.secondary{background:#e5e7eb;color:#111;}
 .count{grid-column:1/3;text-align:center;font-weight:900;font-size:30px;align-self:center;}
 .prov{grid-column:1/3;text-align:center;font-weight:900;font-size:20px;}
 
+/* Select2 match inputs */
+.select2-container .select2-selection--single{
+  height: 42px;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  display:flex;
+  align-items:center;
+  padding: 0 8px;
+  box-sizing:border-box;
+  background:#fff;
+}
+.select2-container--default .select2-selection--single .select2-selection__rendered{
+  line-height: 40px;
+  padding-left: 4px;
+  color:#111;
+  font-size:14px;
+}
+.select2-container--default .select2-selection--single .select2-selection__arrow{
+  height: 40px;
+  right: 8px;
+}
+.select2-dropdown{
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  overflow:hidden;
+}
+.select2-search--dropdown .select2-search__field{
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 8px 10px;
+  outline:none;
+}
+.select2-results__option{ font-size:14px; }
+.select2-container--default .select2-results__option--highlighted.select2-results__option--selectable{
+  background: #111;
+  color:#fff;
+}
+
+/* Print: 1 label per page 4x1.5 */
 @media print{
- @page{size:4in 1.5in;margin:0;}
- body{margin:0;background:#fff;}
- .no-print{display:none !important;}
- .labels{display:block;padding:0;border:0;}
- .label{width:4in;height:1.5in;border:0;margin:0;page-break-after:always;}
+  @page{size:4in 1.5in;margin:0;}
+  html,body{margin:0 !important;padding:0 !important;background:#fff !important;}
+  .no-print{display:none !important;}
+  .wrap{margin:0 !important;padding:0 !important;max-width:none !important;}
+  .labels{display:block !important;padding:0 !important;border:0 !important;background:#fff !important;border-radius:0 !important;}
+  .label{width:4in !important;height:1.5in !important;border:0 !important;margin:0 !important;page-break-after:always;break-after:page;break-inside:avoid;}
 }
 </style>
 </head>
 
 <body>
 <div class="wrap">
-<div class="card no-print">
-<h1>พิมพ์สติ๊กเกอร์ 4x1.5 นิ้ว</h1>
-<div class="sub">เลือกจาก Dropdown Search (Select2)</div>
+  <div class="card no-print">
+    <h1>พิมพ์สติ๊กเกอร์ 4x1.5 นิ้ว (Select2) + บันทึกลง Google Sheet</h1>
+    <div class="sub">เลือก Customer/Driver แบบค้นหาได้ • กดพิมพ์ = บันทึกก่อนแล้วค่อยพิมพ์</div>
 
-<div class="grid" style="margin-top:12px;">
-<div>
-<label>เลือกลูกค้า</label>
-<select id="customerSelect" style="width:100%"></select>
-</div>
-<div class="grid3">
-<div><label>รหัสสาขา</label><input id="branchCode" readonly></div>
-<div><label>ชื่อร้าน</label><input id="customerName" readonly></div>
-<div><label>จังหวัด</label><input id="province" readonly></div>
-</div>
-</div>
+    <div class="section">
+      <div class="sectionTitle"><span class="pill">1</span> ข้อมูลลูกค้า</div>
+      <div class="grid">
+        <div>
+          <label>เลือกลูกค้า (ค้นหาได้)</label>
+          <select id="customerSelect" style="width:100%"></select>
+        </div>
+        <div class="grid3">
+          <div><label>รหัสสาขา</label><input id="branchCode" readonly></div>
+          <div><label>ชื่อร้าน</label><input id="customerName" readonly></div>
+          <div><label>จังหวัด</label><input id="province" readonly></div>
+        </div>
+      </div>
+    </div>
 
-<div class="grid3" style="margin-top:12px;">
-<div><label>จำนวนกล่องทั้งหมด</label><input id="totalBoxes" type="number" min="0" value="0"></div>
-<div><label>Action</label>
-<select id="action">
-<option value="PRINT">PRINT</option>
-<option value="REPRINT">REPRINT</option>
-<option value="CANCEL">CANCEL</option>
-</select></div>
-<div><label>หมายเหตุ</label><input id="note"></div>
-</div>
+    <div class="section">
+      <div class="sectionTitle"><span class="pill">2</span> ข้อมูลงานพิมพ์</div>
+      <div class="grid3">
+        <div><label>จำนวนกล่องทั้งหมด</label><input id="totalBoxes" type="number" min="0" step="1" value="0"></div>
+        <div>
+          <label>Action</label>
+          <select id="action">
+            <option value="PRINT" selected>PRINT</option>
+            <option value="REPRINT">REPRINT</option>
+            <option value="CANCEL">CANCEL</option>
+          </select>
+        </div>
+        <div><label>หมายเหตุ</label><input id="note" placeholder="optional"></div>
+      </div>
+    </div>
 
-<div class="grid" style="margin-top:12px;">
-<div>
-<label>เลือกคนขับ</label>
-<select id="driverSelect" style="width:100%"></select>
-</div>
-<div class="grid3">
-<div><label>ทะเบียน</label><input id="driverPlate" readonly></div>
-<div><label>ชื่อ</label><input id="driverName" readonly></div>
-<div><label>โทร</label><input id="driverPhone" readonly></div>
-</div>
-</div>
+    <div class="section">
+      <div class="sectionTitle"><span class="pill">3</span> ข้อมูลคนขับรถ</div>
+      <div class="grid">
+        <div>
+          <label>เลือกคนขับ (ค้นหาได้)</label>
+          <select id="driverSelect" style="width:100%"></select>
+        </div>
+        <div class="grid3">
+          <div><label>ทะเบียน</label><input id="driverPlate" readonly></div>
+          <div><label>ชื่อ พขร.</label><input id="driverName" readonly></div>
+          <div><label>เบอร์โทร</label><input id="driverPhone" readonly></div>
+        </div>
+      </div>
+    </div>
 
-<div class="btns">
-<button id="btnGen">สร้างตัวอย่าง</button>
-<button id="btnPrint">พิมพ์</button>
-<button class="secondary" id="btnClear">ล้าง</button>
-<div class="status"><div class="dot" id="apiDot"></div><span id="apiText">พร้อม</span></div>
-</div>
-</div>
+    <!-- ✅ กล่องประเภทกลับมาแล้ว -->
+    <div class="section">
+      <div class="sectionTitle"><span class="pill">4</span> ประเภทลัง (บันทึกลงชีต)</div>
+      <div class="grid5">
+        <div><label>Size M</label><input id="sizeM" type="number" min="0" step="1" value="0"></div>
+        <div><label>tote_blue</label><input id="blue" type="number" min="0" step="1" value="0"></div>
+        <div><label>tote_red</label><input id="red" type="number" min="0" step="1" value="0"></div>
+        <div><label>tote_green</label><input id="green" type="number" min="0" step="1" value="0"></div>
+        <div><label>tote_black</label><input id="black" type="number" min="0" step="1" value="0"></div>
+      </div>
+      <div class="sub">*ประเภทลังไม่แสดงบนสติ๊กเกอร์ แต่จะถูกบันทึกใน print_logs</div>
+    </div>
 
-<div class="labels" id="labels"></div>
+    <div class="btns">
+      <button id="btnGen">สร้างตัวอย่าง</button>
+      <button id="btnPrint">พิมพ์ (บันทึก)</button>
+      <button class="secondary" id="btnClear">ล้าง</button>
+
+      <div class="status">
+        <div class="dot" id="apiDot"></div>
+        <span id="apiText">พร้อมใช้งาน</span>
+        <span class="sub" id="lastJob" style="margin-left:10px;"></span>
+      </div>
+    </div>
+
+    <div class="sub" style="margin-top:10px;">
+      WEBAPP_URL: <span style="font-family:ui-monospace,monospace;" id="showUrl"></span>
+    </div>
+  </div>
+
+  <div class="labels" id="labels"></div>
 </div>
 
 <script>
 // CONFIG (ตั้งให้แล้ว)
-const WEBAPP_URL="https://script.google.com/macros/s/AKfycbwNsX5Wj0C2tdgNw3AVQf3jxw-NNCUG0JWDWqE9uUVASXoueUemIYxuOtFDkrFFul4T/exec";
-const API_TOKEN="pR1nT-LOG-20260212-TOKEN-9f3kQx";
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwNsX5Wj0C2tdgNw3AVQf3jxw-NNCUG0JWDWqE9uUVASXoueUemIYxuOtFDkrFFul4T/exec";
+const API_TOKEN  = "pR1nT-LOG-20260212-TOKEN-9f3kQx";
 
-const byId=id=>document.getElementById(id);
+// ✅ ไม่ชนกับ jQuery แล้ว
+const byId = (id) => document.getElementById(id);
 
-function setStatus(ok,msg){
-const dot=byId("apiDot");
-dot.className="dot "+(ok?"ok":"bad");
-byId("apiText").textContent=msg;
+function setApiStatus(state, text){
+  const dot = byId("apiDot");
+  dot.classList.remove("ok","bad");
+  if(state === "ok") dot.classList.add("ok");
+  if(state === "bad") dot.classList.add("bad");
+  byId("apiText").textContent = text;
+}
+
+function toIntFrom(id){
+  const v = Number(byId(id).value);
+  return Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
 }
 
 function jsonpRequest(url){
-return new Promise((resolve,reject)=>{
-const cb="cb_"+Math.random().toString(36).slice(2);
-window[cb]=data=>{delete window[cb];script.remove();resolve(data);};
-const script=document.createElement("script");
-script.src=url+(url.includes("?")?"&":"?")+"callback="+cb;
-script.onerror=()=>reject(new Error("JSONP request failed"));
-document.body.appendChild(script);
-});
+  return new Promise((resolve, reject) => {
+    const cb = "cb_" + Math.random().toString(36).slice(2);
+    window[cb] = (data) => {
+      try { delete window[cb]; } catch(_) {}
+      script.remove();
+      resolve(data);
+    };
+
+    const script = document.createElement("script");
+    script.src = url + (url.includes("?") ? "&" : "?") + "callback=" + encodeURIComponent(cb);
+
+    script.onerror = () => {
+      try { delete window[cb]; } catch(_) {}
+      script.remove();
+      reject(new Error("JSONP request failed"));
+    };
+
+    document.body.appendChild(script);
+  });
 }
 
-async function apiGet(op,params={}){
-const qs=new URLSearchParams({op,token:API_TOKEN,...params});
-const url=WEBAPP_URL+"?"+qs.toString();
-const json=await jsonpRequest(url);
-if(!json.ok)throw new Error(json.error||"API error");
-return json;
+async function apiGet(op, params = {}){
+  const qs = new URLSearchParams({ op, token: API_TOKEN, ...params });
+  const url = WEBAPP_URL + "?" + qs.toString();
+  const json = await jsonpRequest(url);
+  if(!json || !json.ok) throw new Error((json && json.error) ? json.error : "API error");
+  return json;
 }
 
-let customers=[],drivers=[];
+let customers = [];
+let drivers = [];
 
-function initSelects(){
-const cSel=$("#customerSelect");
-cSel.empty().append(new Option("", "", true, true));
-customers.forEach(c=>{
-cSel.append(new Option(`${c.branch_code} - ${c.customer_name} (${c.province})`,c.branch_code));
-});
-cSel.select2({placeholder:"ค้นหาลูกค้า",allowClear:true});
-cSel.on("change",function(){
-const val=$(this).val();
-const found=customers.find(c=>c.branch_code===val);
-if(found){
-$("#branchCode").val(found.branch_code);
-$("#customerName").val(found.customer_name);
-$("#province").val(found.province);
-}
-});
+function initCustomerSelect(){
+  const $sel = jQuery("#customerSelect");
+  $sel.empty();
+  $sel.append(new Option("", "", true, true));
+  customers.forEach(c => {
+    const text = `${c.branch_code} - ${c.customer_name} (${c.province})`;
+    $sel.append(new Option(text, c.branch_code, false, false));
+  });
 
-const dSel=$("#driverSelect");
-dSel.empty().append(new Option("", "", true, true));
-drivers.forEach(d=>{
-dSel.append(new Option(`${d.plate} - ${d.driver_name}`,d.plate));
-});
-dSel.select2({placeholder:"ค้นหาคนขับ",allowClear:true});
-dSel.on("change",function(){
-const val=$(this).val();
-const found=drivers.find(d=>d.plate===val);
-if(found){
-$("#driverPlate").val(found.plate);
-$("#driverName").val(found.driver_name);
-$("#driverPhone").val(found.phone);
+  $sel.select2({ placeholder: "ค้นหา รหัสสาขา / ชื่อร้าน / จังหวัด", allowClear: true });
+
+  $sel.on("change", function(){
+    const branch = jQuery(this).val();
+    const found = customers.find(x => x.branch_code === branch);
+    if(found){
+      byId("branchCode").value = found.branch_code;
+      byId("customerName").value = found.customer_name;
+      byId("province").value = found.province;
+    } else {
+      byId("branchCode").value = "";
+      byId("customerName").value = "";
+      byId("province").value = "";
+    }
+  });
 }
-});
+
+function initDriverSelect(){
+  const $sel = jQuery("#driverSelect");
+  $sel.empty();
+  $sel.append(new Option("", "", true, true));
+  drivers.forEach(d => {
+    const text = `${d.plate} - ${d.driver_name} (${d.phone})`;
+    $sel.append(new Option(text, d.plate, false, false));
+  });
+
+  $sel.select2({ placeholder: "ค้นหา ทะเบียน / ชื่อ / เบอร์โทร", allowClear: true });
+
+  $sel.on("change", function(){
+    const plate = jQuery(this).val();
+    const found = drivers.find(x => x.plate === plate);
+    if(found){
+      byId("driverPlate").value = found.plate;
+      byId("driverName").value = found.driver_name;
+      byId("driverPhone").value = found.phone;
+    } else {
+      byId("driverPlate").value = "";
+      byId("driverName").value = "";
+      byId("driverPhone").value = "";
+    }
+  });
+}
+
+function buildLabelHTML(d, idx){
+  const store = (d.customer_name || "-");
+  const branch = (d.branch_code || "-");
+  const prov = (d.province || "-");
+  return `
+    <div class="label">
+      <div class="lay">
+        <div class="store">${store}</div>
+        <div class="right">
+          <div class="cap">รหัสสาขา:</div>
+          <div class="code">${branch}</div>
+        </div>
+        <div class="count">${idx}/${d.total_boxes}</div>
+        <div class="prov">จว.: ${prov}</div>
+      </div>
+    </div>
+  `;
 }
 
 function renderLabels(d){
-const container=byId("labels");
-container.innerHTML="";
-if(d.total_boxes<=0)return;
-for(let i=1;i<=d.total_boxes;i++){
-container.innerHTML+=`
-<div class="label">
-<div class="lay">
-<div class="store">${d.customer_name}</div>
-<div class="right"><div class="cap">รหัสสาขา:</div><div class="code">${d.branch_code}</div></div>
-<div class="count">${i}/${d.total_boxes}</div>
-<div class="prov">จว.: ${d.province}</div>
-</div></div>`;
-}
+  const container = byId("labels");
+  container.innerHTML = "";
+  if(d.total_boxes <= 0){
+    container.innerHTML = `<div style="color:#6b7280;padding:12px;">กรุณาใส่จำนวนกล่องทั้งหมดมากกว่า 0</div>`;
+    return;
+  }
+  let html = "";
+  for(let i=1; i<=d.total_boxes; i++){
+    html += buildLabelHTML(d, i);
+  }
+  container.innerHTML = html;
 }
 
-byId("btnGen").onclick=()=>{
-renderLabels({
-customer_name:byId("customerName").value,
-branch_code:byId("branchCode").value,
-province:byId("province").value,
-total_boxes:Number(byId("totalBoxes").value||0)
+function collectForm(){
+  return {
+    branch_code: byId("branchCode").value.trim(),
+    customer_name: byId("customerName").value.trim(),
+    province: byId("province").value.trim(),
+    total_boxes: toIntFrom("totalBoxes"),
+
+    // ✅ กล่องประเภท (บันทึกลงชีต)
+    size_m: toIntFrom("sizeM"),
+    tote_blue: toIntFrom("blue"),
+    tote_red: toIntFrom("red"),
+    tote_green: toIntFrom("green"),
+    tote_black: toIntFrom("black"),
+
+    // driver (บันทึกลงชีต)
+    driver_plate: byId("driverPlate").value.trim(),
+    driver_name: byId("driverName").value.trim(),
+    driver_phone: byId("driverPhone").value.trim(),
+
+    action: byId("action").value,
+    note: byId("note").value.trim()
+  };
+}
+
+function validateForm(d){
+  if(!d.branch_code) return "กรุณาเลือกลูกค้า";
+  if(!d.customer_name) return "ชื่อร้านว่าง (ลองเลือกลูกค้าใหม่)";
+  if(!d.province) return "จังหวัดว่าง (ลองเลือกลูกค้าใหม่)";
+  if(d.total_boxes <= 0) return "จำนวนกล่องทั้งหมดต้องมากกว่า 0";
+  return "";
+}
+
+async function saveLog(d){
+  await apiGet("log", {
+    branch_code: d.branch_code,
+    customer_name: d.customer_name,
+    province: d.province,
+
+    total_boxes: String(d.total_boxes),
+    size_m: String(d.size_m),
+    tote_blue: String(d.tote_blue),
+    tote_red: String(d.tote_red),
+    tote_green: String(d.tote_green),
+    tote_black: String(d.tote_black),
+
+    driver_plate: d.driver_plate,
+    driver_name: d.driver_name,
+    driver_phone: d.driver_phone,
+
+    action: d.action,
+    note: d.note,
+    user_agent: navigator.userAgent
+  });
+}
+
+let isSaving = false;
+
+byId("btnGen").addEventListener("click", () => {
+  const d = collectForm();
+  const err = validateForm(d);
+  if(err){ alert(err); return; }
+  renderLabels(d);
 });
-};
 
-byId("btnPrint").onclick=async()=>{
-try{
-setStatus(false,"กำลังบันทึก...");
-const d={
-branch_code:byId("branchCode").value,
-customer_name:byId("customerName").value,
-province:byId("province").value,
-total_boxes:byId("totalBoxes").value,
-driver_plate:byId("driverPlate").value,
-driver_name:byId("driverName").value,
-driver_phone:byId("driverPhone").value,
-action:byId("action").value,
-note:byId("note").value
-};
-await apiGet("log",d);
-setStatus(true,"บันทึกสำเร็จ");
-renderLabels({...d,total_boxes:Number(d.total_boxes)});
-window.print();
-}catch(e){
-setStatus(false,"ผิดพลาด");
-alert(e.message);
-}
-};
+byId("btnPrint").addEventListener("click", async () => {
+  if(isSaving) return;
+  isSaving = true;
+  byId("btnPrint").disabled = true;
 
-byId("btnClear").onclick=()=>{
-$("#customerSelect").val(null).trigger("change");
-$("#driverSelect").val(null).trigger("change");
-byId("totalBoxes").value=0;
-byId("note").value="";
-byId("labels").innerHTML="";
-};
+  try{
+    const d = collectForm();
+    const err = validateForm(d);
+    if(err){ alert(err); return; }
+
+    setApiStatus("", "กำลังบันทึกลงชีต...");
+    await saveLog(d);
+
+    setApiStatus("ok", "บันทึกสำเร็จ");
+    renderLabels(d);
+    window.print();
+  } catch(e){
+    setApiStatus("bad", "บันทึกไม่สำเร็จ");
+    alert("บันทึกประวัติไม่สำเร็จ: " + (e.message || e));
+  } finally {
+    isSaving = false;
+    byId("btnPrint").disabled = false;
+  }
+});
+
+byId("btnClear").addEventListener("click", () => {
+  jQuery("#customerSelect").val(null).trigger("change");
+  jQuery("#driverSelect").val(null).trigger("change");
+
+  ["totalBoxes","note","sizeM","blue","red","green","black"].forEach(id=>{
+    if(["totalBoxes","sizeM","blue","red","green","black"].includes(id)) byId(id).value = 0;
+    else byId(id).value = "";
+  });
+
+  byId("action").value = "PRINT";
+  byId("labels").innerHTML = "";
+  byId("lastJob").textContent = "";
+  setApiStatus("ok", "พร้อมใช้งาน");
+});
 
 (async function init(){
-try{
-setStatus(false,"โหลดข้อมูล...");
-customers=(await apiGet("customers")).items||[];
-drivers=(await apiGet("drivers")).items||[];
-initSelects();
-setStatus(true,"พร้อมใช้งาน");
-}catch(e){
-setStatus(false,"โหลดข้อมูลไม่สำเร็จ");
-alert(e.message);
-}
+  try{
+    byId("showUrl").textContent = WEBAPP_URL;
+    setApiStatus("", "กำลังโหลดข้อมูล...");
+
+    customers = (await apiGet("customers")).items || [];
+    drivers   = (await apiGet("drivers")).items || [];
+
+    initCustomerSelect();
+    initDriverSelect();
+
+    setApiStatus("ok", "พร้อมใช้งาน");
+  } catch(e){
+    setApiStatus("bad", "โหลดข้อมูลไม่สำเร็จ");
+    alert("โหลดข้อมูลลูกค้า/คนขับไม่สำเร็จ: " + (e.message || e));
+  }
 })();
 </script>
 </body>
