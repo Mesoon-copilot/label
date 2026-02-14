@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Label Print 4x1.5 (Select2 + Boxes)</title>
+<title>Label Print 4x1.5 (Select2 + Boxes + Pallet/Wave)</title>
 
 <!-- Select2 -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -64,7 +64,7 @@ button.secondary{background:#e5e7eb;color:#111;}
   grid-template-rows:auto 1fr auto;
 }
 
-/* ✅ Font-size ตามที่คุณกำหนด */
+/* ✅ Font-size ตามที่กำหนด */
 .store{font-weight:900;font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .right{text-align:right;font-weight:900;}
 .right .cap{font-size:15px;}
@@ -126,7 +126,7 @@ button.secondary{background:#e5e7eb;color:#111;}
 <div class="wrap">
   <div class="card no-print">
     <h1>พิมพ์สติ๊กเกอร์ 4x1.5 นิ้ว (Select2) + บันทึกลง Google Sheet</h1>
-    <div class="sub">เลือก Customer/Driver แบบค้นหาได้ • กดพิมพ์ = บันทึกก่อนแล้วค่อยพิมพ์</div>
+    <div class="sub">Wave: กรอกมือ (หรือใช้เครื่องสแกนแบบคีย์บอร์ดพิมพ์ลงช่องได้)</div>
 
     <div class="section">
       <div class="sectionTitle"><span class="pill">1</span> ข้อมูลลูกค้า</div>
@@ -145,6 +145,7 @@ button.secondary{background:#e5e7eb;color:#111;}
 
     <div class="section">
       <div class="sectionTitle"><span class="pill">2</span> ข้อมูลงานพิมพ์</div>
+
       <div class="grid3">
         <div><label>จำนวนกล่องทั้งหมด</label><input id="totalBoxes" type="number" min="0" step="1" value="0"></div>
         <div>
@@ -156,6 +157,21 @@ button.secondary{background:#e5e7eb;color:#111;}
           </select>
         </div>
         <div><label>หมายเหตุ</label><input id="note" placeholder="optional"></div>
+      </div>
+
+      <div class="grid3" style="margin-top:12px;">
+        <div>
+          <label>Pallet (กรอกมือ)</label>
+          <input id="pallet" placeholder="เช่น PLT-01">
+        </div>
+
+        <div>
+          <label>Wave (กรอกมือ)</label>
+          <input id="wave" placeholder="เช่น WAVE12345">
+          <div class="sub">*กด Enter ที่ช่อง Wave เพื่อพิมพ์ (บันทึก) ได้ทันที</div>
+        </div>
+
+        <div></div>
       </div>
     </div>
 
@@ -174,7 +190,6 @@ button.secondary{background:#e5e7eb;color:#111;}
       </div>
     </div>
 
-    <!-- ✅ กล่องประเภทกลับมาแล้ว -->
     <div class="section">
       <div class="sectionTitle"><span class="pill">4</span> ประเภทลัง (บันทึกลงชีต)</div>
       <div class="grid5">
@@ -208,11 +223,10 @@ button.secondary{background:#e5e7eb;color:#111;}
 </div>
 
 <script>
-// CONFIG (ตั้งให้แล้ว)
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwNsX5Wj0C2tdgNw3AVQf3jxw-NNCUG0JWDWqE9uUVASXoueUemIYxuOtFDkrFFul4T/exec";
+// CONFIG
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwKK2x-AAhnx70iZDX1QreKwIyQQvH7PWl32vuj4AYJA6rGzScjbKHN1SIzqTkz8WQq/exec";
 const API_TOKEN  = "pR1nT-LOG-20260212-TOKEN-9f3kQx";
 
-// ✅ ไม่ชนกับ jQuery แล้ว
 const byId = (id) => document.getElementById(id);
 
 function setApiStatus(state, text){
@@ -228,6 +242,7 @@ function toIntFrom(id){
   return Number.isFinite(v) && v > 0 ? Math.floor(v) : 0;
 }
 
+// JSONP
 function jsonpRequest(url){
   return new Promise((resolve, reject) => {
     const cb = "cb_" + Math.random().toString(36).slice(2);
@@ -313,6 +328,7 @@ function initDriverSelect(){
   });
 }
 
+// Labels
 function buildLabelHTML(d, idx){
   const store = (d.customer_name || "-");
   const branch = (d.branch_code || "-");
@@ -346,6 +362,7 @@ function renderLabels(d){
   container.innerHTML = html;
 }
 
+// Form
 function collectForm(){
   return {
     branch_code: byId("branchCode").value.trim(),
@@ -353,14 +370,15 @@ function collectForm(){
     province: byId("province").value.trim(),
     total_boxes: toIntFrom("totalBoxes"),
 
-    // ✅ กล่องประเภท (บันทึกลงชีต)
+    pallet: byId("pallet").value.trim(),
+    wave: byId("wave").value.trim(),
+
     size_m: toIntFrom("sizeM"),
     tote_blue: toIntFrom("blue"),
     tote_red: toIntFrom("red"),
     tote_green: toIntFrom("green"),
     tote_black: toIntFrom("black"),
 
-    // driver (บันทึกลงชีต)
     driver_plate: byId("driverPlate").value.trim(),
     driver_name: byId("driverName").value.trim(),
     driver_phone: byId("driverPhone").value.trim(),
@@ -383,6 +401,8 @@ async function saveLog(d){
     branch_code: d.branch_code,
     customer_name: d.customer_name,
     province: d.province,
+    pallet: d.pallet,
+    wave: d.wave,
 
     total_boxes: String(d.total_boxes),
     size_m: String(d.size_m),
@@ -410,7 +430,7 @@ byId("btnGen").addEventListener("click", () => {
   renderLabels(d);
 });
 
-byId("btnPrint").addEventListener("click", async () => {
+async function handlePrint(){
   if(isSaving) return;
   isSaving = true;
   byId("btnPrint").disabled = true;
@@ -426,6 +446,8 @@ byId("btnPrint").addEventListener("click", async () => {
     setApiStatus("ok", "บันทึกสำเร็จ");
     renderLabels(d);
     window.print();
+
+    setTimeout(() => byId("wave").focus(), 350);
   } catch(e){
     setApiStatus("bad", "บันทึกไม่สำเร็จ");
     alert("บันทึกประวัติไม่สำเร็จ: " + (e.message || e));
@@ -433,21 +455,31 @@ byId("btnPrint").addEventListener("click", async () => {
     isSaving = false;
     byId("btnPrint").disabled = false;
   }
-});
+}
+
+byId("btnPrint").addEventListener("click", handlePrint);
 
 byId("btnClear").addEventListener("click", () => {
   jQuery("#customerSelect").val(null).trigger("change");
   jQuery("#driverSelect").val(null).trigger("change");
 
-  ["totalBoxes","note","sizeM","blue","red","green","black"].forEach(id=>{
+  ["totalBoxes","note","pallet","wave","sizeM","blue","red","green","black"].forEach(id=>{
     if(["totalBoxes","sizeM","blue","red","green","black"].includes(id)) byId(id).value = 0;
     else byId(id).value = "";
   });
 
   byId("action").value = "PRINT";
   byId("labels").innerHTML = "";
-  byId("lastJob").textContent = "";
   setApiStatus("ok", "พร้อมใช้งาน");
+  setTimeout(() => byId("wave").focus(), 120);
+});
+
+// Enter in wave => print
+byId("wave").addEventListener("keydown", (ev) => {
+  if(ev.key === "Enter"){
+    ev.preventDefault();
+    handlePrint();
+  }
 });
 
 (async function init(){
@@ -462,6 +494,8 @@ byId("btnClear").addEventListener("click", () => {
     initDriverSelect();
 
     setApiStatus("ok", "พร้อมใช้งาน");
+    setTimeout(() => byId("wave").focus(), 250);
+
   } catch(e){
     setApiStatus("bad", "โหลดข้อมูลไม่สำเร็จ");
     alert("โหลดข้อมูลลูกค้า/คนขับไม่สำเร็จ: " + (e.message || e));
