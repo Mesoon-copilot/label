@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Simple QR Maker (No Library)</title>
+  <style>
+    :root { --bg:#0b1220; --card:#111a2e; --muted:#94a3b8; --text:#e5e7eb; --line:rgba(255,255,255,.10); }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; font-family: ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Thai",Arial,sans-serif;
+      background: radial-gradient(1200px 600px at 20% 10%, rgba(99,102,241,.20), transparent),
+                  radial-gradient(1000px 600px at 90% 30%, rgba(16,185,129,.16), transparent),
+                  var(--bg);
+      color:var(--text);
+    }
+    .wrap{ max-width:980px; margin:0 auto; padding:28px 16px 56px; }
+    header{ display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:12px; }
+    h1{ font-size:20px; margin:0; }
+    .sub{ color:var(--muted); font-size:13px; }
+    .grid{ margin-top:18px; display:grid; grid-template-columns: 1.25fr .9fr; gap:14px; }
+    @media(max-width:860px){ .grid{ grid-template-columns:1fr; } }
+    .card{ background:rgba(17,26,46,.82); border:1px solid var(--line); border-radius:16px; padding:16px; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+    label{ font-size:12px; color:var(--muted); display:block; margin-bottom:6px; }
+    input[type="text"], input[type="number"], select{
+      width:100%; padding:10px 12px; border-radius:12px; border:1px solid var(--line);
+      background: rgba(9,14,26,.65); color:var(--text); outline:none;
+    }
+    input:focus, select:focus{ border-color: rgba(99,102,241,.6); }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .col{ flex:1; min-width:210px; }
+    .btn{
+      cursor:pointer; border:1px solid var(--line); background: rgba(99,102,241,.18); color:var(--text);
+      padding:10px 12px; border-radius:12px; font-weight:600;
+    }
+    .btn:hover{ background: rgba(99,102,241,.28); }
+    .btn.secondary{ background: rgba(148,163,184,.10); }
+    .btn.secondary:hover{ background: rgba(148,163,184,.18); }
+    .hint{ font-size:12px; color:var(--muted); margin-top:10px; line-height:1.45; }
+    .pal{ display:grid; grid-template-columns: repeat(6, 1fr); gap:8px; margin-top:8px; }
+    .sw{ height:28px; border-radius:10px; border:1px solid var(--line); cursor:pointer; position:relative; }
+    .sw[aria-selected="true"]::after{
+      content:""; position:absolute; inset:6px; border:2px solid rgba(255,255,255,.85); border-radius:8px;
+      box-shadow:0 0 0 2px rgba(0,0,0,.25);
+    }
+    .preview{
+      width:100%; display:flex; flex-direction:column; align-items:center; gap:10px;
+      padding:14px; border-radius:16px; border:1px dashed rgba(255,255,255,.18); background: rgba(9,14,26,.35);
+    }
+    .meta{ font-size:12px; color:var(--muted); text-align:center; }
+    .err{ color:#fecaca; font-size:12px; margin-top:8px; display:none; }
+    .ok{ color:#bbf7d0; font-size:12px; margin-top:8px; display:none; }
+    .k{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    img{ max-width:100%; height:auto; border-radius:12px; background: transparent; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Simple QR Maker (ลายเรียบ + เลือกสีได้)</h1>
+        <div class="sub">ไม่ใช้ไลบรารี JS — สร้าง QR ผ่าน API แล้วดาวน์โหลด PNG ไปใช้ใน Canva</div>
+      </div>
+      <div class="sub">Tip: สีเข้มบนพื้นขาว = สแกนชัวร์</div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <div class="row">
+          <div class="col" style="min-width:320px;">
+            <label>ลิงก์ (URL)</label>
+            <input id="url" type="text" placeholder="เช่น https://example.com/verify/123" />
+          </div>
+          <div class="col">
+            <label>ขนาด (px)</label>
+            <input id="size" type="number" min="180" max="2000" value="640" />
+          </div>
+          <div class="col">
+            <label>ความทน (Error correction)</label>
+            <select id="ecc">
+              <option value="M" selected>M (แนะนำ: ลายไม่เยอะ + สแกนง่าย)</option>
+              <option value="Q">Q (ทนขึ้น เหมาะพิมพ์เล็ก)</option>
+              <option value="H">H (ทนสุด ลายจะเยอะขึ้น)</option>
+              <option value="L">L (ลายน้อยสุด แต่ทนน้อย)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+          <div class="col">
+            <label>สี QR (เลือกเฉดได้)</label>
+            <div class="row" style="gap:8px; align-items:flex-end;">
+              <div class="col" style="min-width:220px;">
+                <input id="fg" type="text" value="#0B1F3B" class="k" />
+              </div>
+              <div style="width:64px;">
+                <input id="fgPicker" type="color" value="#0B1F3B"
+                  style="width:64px; height:42px; border-radius:12px; border:1px solid var(--line); background:transparent; padding:0;" />
+              </div>
+              <button id="apply" class="btn">สร้าง/อัปเดต QR</button>
+              <button id="clear" class="btn secondary">ล้าง</button>
+            </div>
+
+            <div class="pal" id="palette"></div>
+
+            <div class="hint">
+              แนะนำโทนสีบัตรพนักงาน: ดำ/น้ำเงินเข้ม/กรมท่า/เขียวเข้ม •
+              เลี่ยงสีอ่อน/พาสเทล/พื้นหลังเข้ม
+            </div>
+            <div id="err" class="err"></div>
+            <div id="ok" class="ok"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="preview">
+          <div class="meta">พรีวิว QR (PNG) — กดดาวน์โหลดแล้วไปวางใน Canva ได้เลย</div>
+          <img id="qrImg" alt="QR Preview" />
+          <div class="row" style="justify-content:center;">
+            <a id="download" class="btn" href="#" download="qr.png">ดาวน์โหลด PNG</a>
+            <button id="copy" class="btn secondary">คัดลอกลิงก์</button>
+          </div>
+          <div class="meta">ถ้าจะพิมพ์คม: ตั้งขนาด 800–1200px แล้วค่อยย่อใน Canva</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+    const urlEl = el("url");
+    const sizeEl = el("size");
+    const eccEl  = el("ecc");
+    const fgEl   = el("fg");
+    const fgPickerEl = el("fgPicker");
+    const qrImg = el("qrImg");
+    const downloadEl = el("download");
+    const errEl = el("err");
+    const okEl = el("ok");
+
+    const palette = [
+      "#000000","#0B1F3B","#0A2E6D","#0B3D2E","#3B0764","#7C2D12",
+      "#111827","#1F2937","#334155","#14532D","#1E3A8A","#312E81"
+    ];
+
+    function showErr(msg){ errEl.textContent = msg; errEl.style.display="block"; okEl.style.display="none"; }
+    function showOk(msg){ okEl.textContent = msg; okEl.style.display="block"; errEl.style.display="none"; }
+
+    function normalizeHex(v){
+      v = (v || "").trim();
+      if (!v) return "";
+      if (!v.startsWith("#")) v = "#" + v;
+      if (v.length === 4) v = "#" + v[1]+v[1] + v[2]+v[2] + v[3]+v[3];
+      return v.toUpperCase();
+    }
+    function isValidHex(v){ return /^#[0-9A-F]{6}$/i.test(v); }
+
+    function renderPalette(){
+      const p = el("palette");
+      p.innerHTML = "";
+      palette.forEach((hex) => {
+        const d = document.createElement("div");
+        d.className = "sw";
+        d.style.background = hex;
+        d.setAttribute("role","button");
+        d.setAttribute("tabindex","0");
+        d.setAttribute("aria-selected", (normalizeHex(fgEl.value) === hex.toUpperCase()) ? "true" : "false");
+        d.title = hex;
+        const pick = () => { fgEl.value = hex; fgPickerEl.value = hex; generate(); renderPalette(); };
+        d.addEventListener("click", pick);
+        d.addEventListener("keydown", (e)=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); pick(); }});
+        p.appendChild(d);
+      });
+    }
+
+    function buildApiUrl(url, size, ecc, fgHex){
+      // Use goqr.me API (simple and reliable)
+      // size format: "640x640"
+      // ecc: L|M|Q|H via "ecc"
+      // fg: "R-G-B" via "color"
+      const hex = fgHex.replace("#","");
+      const r = parseInt(hex.slice(0,2),16);
+      const g = parseInt(hex.slice(2,4),16);
+      const b = parseInt(hex.slice(4,6),16);
+
+      const params = new URLSearchParams();
+      params.set("data", url);
+      params.set("size", `${size}x${size}`);
+      params.set("ecc", ecc);
+      params.set("color", `${r}-${g}-${b}`);     // dark color
+      params.set("margin", "10");                // quiet zone
+      // note: background color control isn't provided here; PNG comes with white background.
+      return `https://api.qrserver.com/v1/create-qr-code/?${params.toString()}`;
+    }
+
+    function generate(){
+      const url = (urlEl.value || "").trim();
+      const size = Math.max(180, Math.min(2000, parseInt(sizeEl.value || "640", 10)));
+      sizeEl.value = size;
+
+      const fg = normalizeHex(fgEl.value);
+      fgEl.value = fg;
+      if (fg && isValidHex(fg)) fgPickerEl.value = fg;
+
+      if (!url){
+        qrImg.removeAttribute("src");
+        downloadEl.setAttribute("href","#");
+        showErr("กรุณาใส่ลิงก์ (URL) ก่อน");
+        return;
+      }
+      if (!/^https?:\/\//i.test(url) && !/^mailto:|^tel:|^sms:/i.test(url)){
+        showErr("ลิงก์ควรขึ้นต้นด้วย http:// หรือ https:// (หรือใช้ mailto:/tel: ได้)");
+        return;
+      }
+      if (!isValidHex(fg)){
+        showErr("ค่าสีไม่ถูกต้อง (ใช้รูปแบบ Hex เช่น #0B1F3B)");
+        return;
+      }
+
+      const apiUrl = buildApiUrl(url, size, eccEl.value, fg);
+      qrImg.src = apiUrl;
+      downloadEl.href = apiUrl;
+      downloadEl.download = "qr.png";
+      showOk("สร้าง QR สำเร็จ — กดดาวน์โหลด PNG ได้เลย");
+    }
+
+    el("apply").addEventListener("click", generate);
+    el("clear").addEventListener("click", () => {
+      urlEl.value = "";
+      qrImg.removeAttribute("src");
+      downloadEl.href = "#";
+      errEl.style.display = "none";
+      okEl.style.display = "none";
+    });
+
+    fgEl.addEventListener("change", () => { fgEl.value = normalizeHex(fgEl.value); generate(); renderPalette(); });
+    fgPickerEl.addEventListener("input", () => { fgEl.value = fgPickerEl.value.toUpperCase(); generate(); renderPalette(); });
+    sizeEl.addEventListener("change", generate);
+    eccEl.addEventListener("change", generate);
+
+    el("copy").addEventListener("click", async () => {
+      const url = (urlEl.value || "").trim();
+      if (!url) return showErr("ยังไม่มีลิงก์ให้คัดลอก");
+      try { await navigator.clipboard.writeText(url); showOk("คัดลอกลิงก์แล้ว"); }
+      catch { showErr("คัดลอกไม่สำเร็จ — ลองคัดลอกจากช่อง URL แทน"); }
+    });
+
+    renderPalette();
+    generate();
+  </script>
+</body>
+</html>
