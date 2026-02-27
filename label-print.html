@@ -46,6 +46,7 @@ button.secondary{background:#e5e7eb;color:#111;}
 .section{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px;margin-top:12px;}
 .sectionTitle{font-size:12px;color:var(--muted);font-weight:800;margin-bottom:10px;display:flex;gap:8px;align-items:center;}
 .pill{font-size:11px;border:1px solid var(--border);padding:2px 8px;border-radius:999px;background:#fff;color:#111;}
+.dateLine{font-weight:800;font-size:12px;margin-top:2px;color:#111;}
 
 /* Label */
 .label{
@@ -167,7 +168,7 @@ button.secondary{background:#e5e7eb;color:#111;}
 
         <div>
           <label>Wave (กรอกมือ)</label>
-          <input id="wave" placeholder="เช่น WAVE12345">
+          <input id="wave" placeholder="เช่น WAVE12345" inputmode="text" autocomplete="off">
           <div class="sub">*กด Enter ที่ช่อง Wave เพื่อพิมพ์ (บันทึก) ได้ทันที</div>
         </div>
 
@@ -203,9 +204,9 @@ button.secondary{background:#e5e7eb;color:#111;}
     </div>
 
     <div class="btns">
-      <button id="btnGen">สร้างตัวอย่าง</button>
-      <button id="btnPrint">พิมพ์ (บันทึก)</button>
-      <button class="secondary" id="btnClear">ล้าง</button>
+      <button id="btnGen" type="button">สร้างตัวอย่าง</button>
+      <button id="btnPrint" type="button">พิมพ์ (บันทึก)</button>
+      <button class="secondary" id="btnClear" type="button">ล้าง</button>
 
       <div class="status">
         <div class="dot" id="apiDot"></div>
@@ -229,6 +230,16 @@ const API_TOKEN  = "pR1nT-LOG-20260212-TOKEN-9f3kQx";
 
 const byId = (id) => document.getElementById(id);
 
+// Escape HTML for safety (customer names, etc.)
+function esc(s){
+  return String(s ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;");
+}
+
 function setApiStatus(state, text){
   const dot = byId("apiDot");
   dot.classList.remove("ok","bad");
@@ -246,15 +257,15 @@ function toIntFrom(id){
 function jsonpRequest(url){
   return new Promise((resolve, reject) => {
     const cb = "cb_" + Math.random().toString(36).slice(2);
+
+    const script = document.createElement("script");
     window[cb] = (data) => {
       try { delete window[cb]; } catch(_) {}
       script.remove();
       resolve(data);
     };
 
-    const script = document.createElement("script");
     script.src = url + (url.includes("?") ? "&" : "?") + "callback=" + encodeURIComponent(cb);
-
     script.onerror = () => {
       try { delete window[cb]; } catch(_) {}
       script.remove();
@@ -280,12 +291,13 @@ function initCustomerSelect(){
   const $sel = jQuery("#customerSelect");
   $sel.empty();
   $sel.append(new Option("", "", true, true));
+
   customers.forEach(c => {
     const text = `${c.branch_code} - ${c.customer_name} (${c.province})`;
     $sel.append(new Option(text, c.branch_code, false, false));
   });
 
-  $sel.select2({ placeholder: "ค้นหา รหัสสาขา / ชื่อร้าน / จังหวัด", allowClear: true });
+  $sel.select2({ placeholder: "ค้นหา รหัสสาขา / ชื่อร้าน / จังหวัด", allowClear: true, width: "resolve" });
 
   $sel.on("change", function(){
     const branch = jQuery(this).val();
@@ -306,12 +318,13 @@ function initDriverSelect(){
   const $sel = jQuery("#driverSelect");
   $sel.empty();
   $sel.append(new Option("", "", true, true));
+
   drivers.forEach(d => {
     const text = `${d.plate} - ${d.driver_name} (${d.phone})`;
     $sel.append(new Option(text, d.plate, false, false));
   });
 
-  $sel.select2({ placeholder: "ค้นหา ทะเบียน / ชื่อ / เบอร์โทร", allowClear: true });
+  $sel.select2({ placeholder: "ค้นหา ทะเบียน / ชื่อ / เบอร์โทร", allowClear: true, width: "resolve" });
 
   $sel.on("change", function(){
     const plate = jQuery(this).val();
@@ -329,19 +342,34 @@ function initDriverSelect(){
 }
 
 // Labels
+function formatThaiDateShort(dt){
+  const d = new Date(dt);
+  const dd = String(d.getDate()).padStart(2,"0");
+  const mm = String(d.getMonth()+1).padStart(2,"0");
+  const yyyy = String(d.getFullYear() + 543);
+  return `${dd}/${mm}/${yyyy}`;
+}
+
 function buildLabelHTML(d, idx){
-  const store = (d.customer_name || "-");
-  const branch = (d.branch_code || "-");
-  const prov = (d.province || "-");
+  const store = esc(d.customer_name || "-");
+  const branch = esc(d.branch_code || "-");
+  const prov = esc(d.province || "-");
+  const dateText = formatThaiDateShort(d.print_date || new Date());
+
   return `
     <div class="label">
       <div class="lay">
-        <div class="store">${store}</div>
+        <div>
+          <div class="store">${store}</div>
+          <div class="dateLine">${esc(dateText)}</div>
+        </div>
+
         <div class="right">
           <div class="cap">รหัสสาขา:</div>
           <div class="code">${branch}</div>
         </div>
-        <div class="count">${idx}/${d.total_boxes}</div>
+
+        <div class="count">${idx}/${Number(d.total_boxes || 0)}</div>
         <div class="prov">จว.: ${prov}</div>
       </div>
     </div>
@@ -365,6 +393,9 @@ function renderLabels(d){
 // Form
 function collectForm(){
   return {
+    // keep a stable date for preview/print (same session)
+    print_date: new Date().toISOString(),
+
     branch_code: byId("branchCode").value.trim(),
     customer_name: byId("customerName").value.trim(),
     province: byId("province").value.trim(),
@@ -397,6 +428,7 @@ function validateForm(d){
 }
 
 async function saveLog(d){
+  // Note: server may ignore extra params like print_date, safe to pass or omit
   await apiGet("log", {
     branch_code: d.branch_code,
     customer_name: d.customer_name,
@@ -463,10 +495,9 @@ byId("btnClear").addEventListener("click", () => {
   jQuery("#customerSelect").val(null).trigger("change");
   jQuery("#driverSelect").val(null).trigger("change");
 
-  ["totalBoxes","note","pallet","wave","sizeM","blue","red","green","black"].forEach(id=>{
-    if(["totalBoxes","sizeM","blue","red","green","black"].includes(id)) byId(id).value = 0;
-    else byId(id).value = "";
-  });
+  // keep numbers reset to 0
+  ["totalBoxes","sizeM","blue","red","green","black"].forEach(id => byId(id).value = 0);
+  ["note","pallet","wave"].forEach(id => byId(id).value = "");
 
   byId("action").value = "PRINT";
   byId("labels").innerHTML = "";
